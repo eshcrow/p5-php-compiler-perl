@@ -40,6 +40,16 @@ class Scalar_String with Scalar
 	}
 }
 
+class Scalar_LNumber with Scalar
+{
+	has value => (is => 'ro', isa => Str);
+	
+	method to_perl ()
+	{
+		$self->value;
+	}
+}
+
 role Stmt with Node;
 
 class Stmt_Echo with Stmt
