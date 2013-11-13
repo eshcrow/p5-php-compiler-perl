@@ -4,7 +4,7 @@ use Moops;
 
 my $Node;
 
-my $DEBUG; BEGIN { $DEBUG = sub { use Data::Dumper; die Dumper(@_) } };
+my $DEBUG; BEGIN { $DEBUG = sub { shift; use Data::Dumper; die Dumper +{@_} } };
 
 role Node
 {
@@ -19,9 +19,45 @@ role Node
 	$Node = ConsumerOf[__PACKAGE__];
 }
 
+class Name with Node
+{
+	has parts     => (is => 'ro', isa => ArrayRef[Str]);
+	has namespace => (is => 'lazy', builder => method { @{$self->parts} > 1 ? $self->parts->[0] : 'PHP::GLOBAL' });
+	has localname => (is => 'lazy', builder => method { $self->parts->[-1] });	
+	
+	method to_perl ()
+	{
+		join('::', $self->namespace, $self->localname);
+	}
+}
+
+class Arg with Node
+{
+	has byRef => (is => 'ro', isa => Bool);
+	has value => (is => 'ro', isa => $Node);
+	
+	method to_perl ()
+	{
+		confess "Not implemented yet" if $self->byRef;
+		$self->value->to_perl();
+	}
+}
+
 role Expr with Node;
 
-class Expr_Print with Expr {
+class Expr_FuncCall with Expr
+{
+	has name => (is => 'ro', isa => $Node);
+	has args => (is => 'ro', isa => ArrayRef[$Node]);
+	
+	method to_perl ()
+	{
+		sprintf('%s(%s)', $self->name->to_perl(), join q[, ], map $_->to_perl(), @{$self->args});
+	}
+}
+
+class Expr_Print with Expr
+{
 	has expr => (is => 'ro', isa => $Node);
 	
 	method to_perl ()
@@ -252,7 +288,6 @@ class Stmt_Else with Stmt
 # Expr_LogicalOr
 # Expr_LogicalXor
 # Expr_MethodCall
-# Expr_Mod
 # Expr_New
 # Expr_NotEqual
 # Expr_NotIdentical
