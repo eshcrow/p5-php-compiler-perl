@@ -16,6 +16,17 @@ role Node
 		confess("No serialization for $self");
 	}
 	
+	around BUILD ($p)
+	{
+		my $self = shift;
+		for (keys %$p)
+		{
+			warn "Missing key $_ in $self" unless exists($self->{$_});
+		}
+	}
+	
+	method BUILD ($p) {}
+	
 	$Node = ConsumerOf[__PACKAGE__];
 }
 
@@ -44,6 +55,15 @@ class Arg with Node
 }
 
 role Expr with Node;
+
+class Expr_Variable with Expr
+{
+	has name => (is => 'ro', isa => Str);
+	method to_perl ()
+	{
+		'$' . $self->name;
+	}	
+}
 
 class Expr_FuncCall with Expr
 {
@@ -179,6 +199,17 @@ class Expr_ArrayItem with Expr
 		}
 		
 		return $self->expr->to_perl();
+	}
+}
+
+class Expr_ArrayDimFetch with Expr
+{
+	has dim => (is => 'ro', isa => $Node | Bool);
+	has var => (is => 'ro', isa => $Node);
+	
+	method to_perl ()
+	{
+		sprintf('%s->index(%s)', $self->var->to_perl(), $self->dim ? $self->dim->to_perl() : 'undef');
 	}
 }
 
