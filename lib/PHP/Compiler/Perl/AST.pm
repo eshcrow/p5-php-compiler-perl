@@ -140,6 +140,16 @@ class Stmt_Echo with Stmt
 	}
 }
 
+class Stmt_InlineHTML with Stmt
+{
+	has value => (is => 'ro', isa => Str);
+	
+	method to_perl ()
+	{
+		sprintf('print(%s);', B::perlstring($self->value));
+	}
+}
+
 ## TODO
 #
 # Arg
@@ -239,7 +249,6 @@ class Stmt_Echo with Stmt
 # Stmt_Goto
 # Stmt_HaltCompiler
 # Stmt_If
-# Stmt_InlineHTML
 # Stmt_Interface
 # Stmt_Label
 # Stmt_Namespace
