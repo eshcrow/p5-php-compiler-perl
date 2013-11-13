@@ -117,6 +117,27 @@ class Expr_Div        with Expr_Infix { define symbol = "/" }
 class Expr_Mod        with Expr_Infix { define symbol = "%" }
 class Expr_Concat     with Expr_Infix { define symbol = "." }
 
+role Expr_Infix_Assign with Expr
+{
+	has var  => (is => 'ro', isa => $Node);
+	has expr => (is => 'ro', isa => $Node);
+	
+	requires 'symbol';
+	
+	method to_perl ()
+	{
+		sprintf('(%s) %s (%s)', $self->var->to_perl, $self->symbol, $self->expr->to_perl);
+	}
+}
+
+class Expr_Assign       with Expr_Infix_Assign { define symbol = "=" };
+class Expr_AssignConcat with Expr_Infix_Assign { define symbol = ".=" };
+class Expr_AssignDiv    with Expr_Infix_Assign { define symbol = "/=" };
+class Expr_AssignMinus  with Expr_Infix_Assign { define symbol = "-=" };
+class Expr_AssignMod    with Expr_Infix_Assign { define symbol = "%=" };
+class Expr_AssignMul    with Expr_Infix_Assign { define symbol = "*=" };
+class Expr_AssignPlus   with Expr_Infix_Assign { define symbol = "+=" };
+
 role Expr_Prefix with Expr
 {
 	has expr => (is => 'ro', isa => $Node);
@@ -312,17 +333,9 @@ class Stmt_Else with Stmt
 ## TODO
 #
 # Const
-# Expr_ArrayDimFetch
 # Expr_AssignBitwiseAnd
 # Expr_AssignBitwiseOr
 # Expr_AssignBitwiseXor
-# Expr_AssignConcat
-# Expr_AssignDiv
-# Expr_AssignMinus
-# Expr_AssignMod
-# Expr_AssignMul
-# Expr_Assign
-# Expr_AssignPlus
 # Expr_AssignRef
 # Expr_AssignShiftLeft
 # Expr_AssignShiftRight
