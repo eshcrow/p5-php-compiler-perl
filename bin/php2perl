@@ -1,0 +1,12 @@
+#!/usr/bin/env perl
+
+use v5.14;
+use Getopt::Long;
+use PHP::Compiler::Perl;
+
+my %opts;
+GetOptions(\%opts, 'code|e=s');
+
+my $in  = exists($opts{code}) ? $opts{code} : do { local $/ = <> };
+my $ast = PHP::Compiler::Perl->php_to_ast($in);
+say $_->to_perl for @$ast;
