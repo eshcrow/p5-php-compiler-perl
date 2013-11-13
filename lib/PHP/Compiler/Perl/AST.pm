@@ -276,7 +276,6 @@ class Stmt_Else with Stmt
 # Expr_ErrorSuppress
 # Expr_Eval
 # Expr_Exit
-# Expr_FuncCall
 # Expr_GreaterOrEqual
 # Expr_Greater
 # Expr_Identical
