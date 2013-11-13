@@ -128,6 +128,14 @@ class Scalar_String with Scalar_Value
 	}
 }
 
+role Stmt with Node
+{
+	around to_perl ()
+	{
+		sprintf("#line %d\n%s\n", $self->_startLine, $self->${^NEXT}(@_));
+	}
+}
+
 class Stmt_Echo with Stmt
 {
 	has exprs => (is => 'ro', isa => ArrayRef[$Node]);
