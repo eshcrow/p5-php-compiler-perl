@@ -30,23 +30,24 @@ class Expr_Print with Expr {
 
 role Scalar with Node;
 
-class Scalar_String with Scalar
-{
-	has value => (is => 'ro', isa => Str);
-	
-	method to_perl ()
-	{
-		B::perlstring($self->value);
-	}
-}
-
-class Scalar_LNumber with Scalar
+role Scalar_Value with Scalar
 {
 	has value => (is => 'ro', isa => Str);
 	
 	method to_perl ()
 	{
 		$self->value;
+	}
+}
+
+class Scalar_LNumber with Scalar_Value;
+class Scalar_DNumber with Scalar_Value;
+
+class Scalar_String with Scalar_Value
+{
+	method to_perl ()
+	{
+		B::perlstring($self->value);
 	}
 }
 
