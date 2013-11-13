@@ -128,8 +128,6 @@ class Scalar_String with Scalar_Value
 	}
 }
 
-role Stmt with Node;
-
 class Stmt_Echo with Stmt
 {
 	has exprs => (is => 'ro', isa => ArrayRef[$Node]);
@@ -148,6 +146,51 @@ class Stmt_InlineHTML with Stmt
 	{
 		sprintf('print(%s);', B::perlstring($self->value));
 	}
+}
+
+class Stmt_If with Stmt
+{
+	has cond    => (is => 'ro');
+	has stmts   => (is => 'ro', isa => ArrayRef);
+	has elseifs => (is => 'ro', isa => ArrayRef);
+	has else    => (is => 'ro');
+	
+	method to_perl ()
+	{
+		my $r = sprintf(
+			'if (%s) { %s }',
+			$self->cond->to_perl(),
+			join(q[], map $_->to_perl(), @{$self->stmts}),
+		);
+		
+		for my $e (@{ $self->elseifs })
+		{
+			$r .= sprintf(
+				' elsif (%s) { %s }',
+				$e->cond->to_perl(),
+				join(q[], map $_->to_perl(), @{$e->stmts}),
+			);
+		}
+		
+		if (my $e = $self->else)
+		{
+			$r .= sprintf(
+				' else { %s }',
+				join(q[], map $_->to_perl(), @{$e->stmts}),
+			);
+		}
+	}
+}
+
+class Stmt_ElseIf with Stmt
+{
+	has cond    => (is => 'ro');
+	has stmts   => (is => 'ro', isa => ArrayRef);
+}
+
+class Stmt_Else with Stmt
+{
+	has stmts   => (is => 'ro', isa => ArrayRef);
 }
 
 ## TODO
@@ -240,15 +283,12 @@ class Stmt_InlineHTML with Stmt
 # Stmt_DeclareDeclare
 # Stmt_Declare
 # Stmt_Do
-# Stmt_ElseIf
-# Stmt_Else
 # Stmt_Foreach
 # Stmt_For
 # Stmt_Function
 # Stmt_Global
 # Stmt_Goto
 # Stmt_HaltCompiler
-# Stmt_If
 # Stmt_Interface
 # Stmt_Label
 # Stmt_Namespace
