@@ -16,9 +16,8 @@ role Node
 		confess("No serialization for $self");
 	}
 	
-	around BUILD ($p)
+	after BUILD ($p)
 	{
-		my $self = shift;
 		for (keys %$p)
 		{
 			warn "Missing key $_ in $self" unless exists($self->{$_});
@@ -74,6 +73,18 @@ class Expr_FuncCall with Expr
 	{
 		sprintf('%s(%s)', $self->name->to_perl(), join q[, ], map $_->to_perl(), @{$self->args});
 	}
+}
+
+class Expr_MethodCall with Expr
+{
+	has var => (is => 'ro', isa => $Node);
+	has name => (is => 'ro', isa => Str);
+	has args => (is => 'ro', isa => ArrayRef[$Node]);
+	
+	method to_perl ()
+	{
+		sprintf('%s->%s(%s)', $self->var->to_perl(), $self->name, join q[, ], map $_->to_perl(), @{$self->args});
+	}	
 }
 
 class Expr_Print with Expr
@@ -137,6 +148,27 @@ class Expr_AssignMinus  with Expr_Infix_Assign { define symbol = "-=" };
 class Expr_AssignMod    with Expr_Infix_Assign { define symbol = "%=" };
 class Expr_AssignMul    with Expr_Infix_Assign { define symbol = "*=" };
 class Expr_AssignPlus   with Expr_Infix_Assign { define symbol = "+=" };
+
+role Expr_Infix_Compare with Expr_Infix
+{
+	requires 'symbol';
+	
+	define comparison = 'compare';
+	
+	method to_perl ()
+	{
+		sprintf('PHP::OP::%s(%s, %s)%s0', $self->comparison, $self->left->to_perl, $self->right->to_perl, $self->symbol);
+	}
+}
+
+class Expr_Smaller        with Expr_Infix_Compare { define symbol = '<' }
+class Expr_SmallerOrEqual with Expr_Infix_Compare { define symbol = '<=' }
+class Expr_Greater        with Expr_Infix_Compare { define symbol = '>' }
+class Expr_GreaterOrEqual with Expr_Infix_Compare { define symbol = '>=' }
+class Expr_Equal          with Expr_Infix_Compare { define symbol = '==' }
+class Expr_NotEqual       with Expr_Infix_Compare { define symbol = '!=' }
+class Expr_Identical      with Expr_Infix_Compare { define symbol = '!='; define comparison = 'is_identical' }
+class Expr_NotIdentical   with Expr_Infix_Compare { define symbol = '=='; define comparison = 'is_identical' }
 
 role Expr_Prefix with Expr
 {
@@ -354,13 +386,9 @@ class Stmt_Else with Stmt
 # Expr_ClosureUse
 # Expr_ConstFetch
 # Expr_Empty
-# Expr_Equal
 # Expr_ErrorSuppress
 # Expr_Eval
 # Expr_Exit
-# Expr_GreaterOrEqual
-# Expr_Greater
-# Expr_Identical
 # Expr_Include
 # Expr_Instanceof
 # Expr_Isset
@@ -370,18 +398,13 @@ class Stmt_Else with Stmt
 # Expr_LogicalXor
 # Expr_MethodCall
 # Expr_New
-# Expr_NotEqual
-# Expr_NotIdentical
 # Expr_PropertyFetch
 # Expr_ShellExec
 # Expr_ShiftLeft
 # Expr_ShiftRight
-# Expr_SmallerOrEqual
-# Expr_Smaller
 # Expr_StaticCall
 # Expr_StaticPropertyFetch
 # Expr_Ternary
-# Expr_Variable
 # Expr_Yield
 # Name_FullyQualified
 # Name_Relative
