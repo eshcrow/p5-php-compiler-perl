@@ -4,6 +4,8 @@ use Moops;
 
 my $Node;
 
+my $DEBUG; BEGIN { $DEBUG = sub { use Data::Dumper; die Dumper(@_) } };
+
 role Node
 {
 	has _startLine => (is => 'ro', isa => Int);
@@ -27,6 +29,81 @@ class Expr_Print with Expr {
 		sprintf('print(%s);', $self->expr->to_perl());
 	}
 }
+
+role Expr_Infix with Expr
+{
+	has left  => (is => 'ro', isa => $Node);
+	has right => (is => 'ro', isa => $Node);
+	
+	requires 'symbol';
+	
+	method to_perl ()
+	{
+		sprintf('(%s) %s (%s)', $self->left->to_perl, $self->symbol, $self->right->to_perl);
+	}
+}
+
+# PHP's boolean 'and' and 'or' operators return booleans.
+role Expr_Infix_CastToBool with Expr_Infix
+{
+	around to_perl ()
+	{
+		sprintf('!!(%s)', $self->${^NEXT}(@_));
+	}
+}
+
+class Expr_BooleanAnd with Expr_Infix_CastToBool { define symbol = "&&" }
+class Expr_BooleanOr  with Expr_Infix_CastToBool { define symbol = "||" }
+class Expr_Plus       with Expr_Infix { define symbol = "+" }
+class Expr_Minus      with Expr_Infix { define symbol = "-" }
+class Expr_Mul        with Expr_Infix { define symbol = "*" }
+class Expr_Div        with Expr_Infix { define symbol = "/" }
+class Expr_Mod        with Expr_Infix { define symbol = "%" }
+class Expr_Concat     with Expr_Infix { define symbol = "." }
+
+role Expr_Prefix with Expr
+{
+	has expr => (is => 'ro', isa => $Node);
+	
+	requires 'symbol';
+	
+	method to_perl ()
+	{
+		sprintf('%s(%s)', $self->symbol, $self->expr->to_perl);
+	}
+}
+
+class Expr_BooleanNot  with Expr_Prefix { define symbol = "!" }
+class Expr_UnaryPlus   with Expr_Prefix { define symbol = "+" }
+class Expr_UnaryMinus  with Expr_Prefix { define symbol = "-" }
+class Expr_PreInc      with Expr_Prefix { define symbol = "++" }
+class Expr_PreDec      with Expr_Prefix { define symbol = "--" }
+class Expr_Cast_Bool   with Expr_Prefix { define symbol = "!!" }
+class Expr_Cast_Double with Expr_Prefix { define symbol = "0+" }
+
+class Expr_Cast_Int with Expr
+{
+	has expr => (is => 'ro', isa => $Node);
+	method to_perl ()
+	{
+		sprintf('int(%s)', $self->expr->to_perl);
+	}	
+}
+
+role Expr_Suffix with Expr
+{
+	has expr => (is => 'ro', isa => $Node);
+	
+	requires 'symbol';
+	
+	method to_perl ()
+	{
+		sprintf('(%s)%s', $self->expr->to_perl, $self->symbol);
+	}
+}
+
+class Expr_PostInc with Expr_Suffix { define symbol = "++" }
+class Expr_PostDec with Expr_Suffix { define symbol = "--" }
 
 role Scalar with Node;
 
@@ -87,13 +164,7 @@ class Stmt_Echo with Stmt
 # Expr_BitwiseNot
 # Expr_BitwiseOr
 # Expr_BitwiseXor
-# Expr_BooleanAnd
-# Expr_BooleanNot
-# Expr_BooleanOr
 # Expr_Cast_Array
-# Expr_Cast_Bool
-# Expr_Cast_Double
-# Expr_Cast_Int
 # Expr_Cast_Object
 # Expr_Cast
 # Expr_Cast_String
@@ -102,9 +173,7 @@ class Stmt_Echo with Stmt
 # Expr_Clone
 # Expr_Closure
 # Expr_ClosureUse
-# Expr_Concat
 # Expr_ConstFetch
-# Expr_Div
 # Expr_Empty
 # Expr_Equal
 # Expr_ErrorSuppress
@@ -122,18 +191,10 @@ class Stmt_Echo with Stmt
 # Expr_LogicalOr
 # Expr_LogicalXor
 # Expr_MethodCall
-# Expr_Minus
 # Expr_Mod
-# Expr_Mul
 # Expr_New
 # Expr_NotEqual
 # Expr_NotIdentical
-# Expr
-# Expr_Plus
-# Expr_PostDec
-# Expr_PostInc
-# Expr_PreDec
-# Expr_PreInc
 # Expr_PropertyFetch
 # Expr_ShellExec
 # Expr_ShiftLeft
@@ -143,8 +204,6 @@ class Stmt_Echo with Stmt
 # Expr_StaticCall
 # Expr_StaticPropertyFetch
 # Expr_Ternary
-# Expr_UnaryMinus
-# Expr_UnaryPlus
 # Expr_Variable
 # Expr_Yield
 # Name_FullyQualified
@@ -153,12 +212,10 @@ class Stmt_Echo with Stmt
 # Param
 # Scalar_ClassConst
 # Scalar_DirConst
-# Scalar_DNumber
 # Scalar_Encapsed
 # Scalar_FileConst
 # Scalar_FuncConst
 # Scalar_LineConst
-# Scalar_LNumber
 # Scalar_MethodConst
 # Scalar_NSConst
 # Scalar_TraitConst
