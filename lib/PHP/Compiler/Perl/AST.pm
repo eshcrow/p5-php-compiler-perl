@@ -2,6 +2,8 @@ package PHP::Compiler::Perl::AST;
 use B ();
 use Moops;
 
+my $Node;
+
 role Node
 {
 	has _startLine => (is => 'ro', isa => Int);
@@ -10,6 +12,19 @@ role Node
 	method to_perl ()
 	{
 		confess("No serialization for $self");
+	}
+	
+	$Node = ConsumerOf[__PACKAGE__];
+}
+
+role Expr with Node;
+
+class Expr_Print with Expr {
+	has expr => (is => 'ro', isa => $Node);
+	
+	method to_perl ()
+	{
+		sprintf('print(%s);', $self->expr->to_perl());
 	}
 }
 
@@ -29,7 +44,7 @@ role Stmt with Node;
 
 class Stmt_Echo with Stmt
 {
-	has exprs => (is => 'ro', isa => ArrayRef);
+	has exprs => (is => 'ro', isa => ArrayRef[$Node]);
 	
 	method to_perl ()
 	{
@@ -108,7 +123,6 @@ class Stmt_Echo with Stmt
 # Expr_PostInc
 # Expr_PreDec
 # Expr_PreInc
-# Expr_Print
 # Expr_PropertyFetch
 # Expr_ShellExec
 # Expr_ShiftLeft
