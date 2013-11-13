@@ -141,6 +141,47 @@ role Expr_Suffix with Expr
 class Expr_PostInc with Expr_Suffix { define symbol = "++" }
 class Expr_PostDec with Expr_Suffix { define symbol = "--" }
 
+class Expr_Array with Expr
+{
+	has items => (is => 'ro', isa => ArrayRef[$Node]);
+	method to_perl ()
+	{
+		sprintf('PHP::GLOBAL::array(%s)', join q[, ], map $_->to_perl(), @{$self->items});
+	}
+}
+
+class Expr_ConstFetch with Expr
+{
+	has name => (is => 'ro');
+	
+	method to_perl ()
+	{
+		B::perlstring($self->name->localname);
+	}
+}
+
+class Expr_ArrayItem with Expr
+{
+	has expr  => (is => 'ro', isa => $Node);
+	has key   => (is => 'ro', isa => $Node | Bool, predicate => 1);
+	has value => (is => 'ro', isa => $Node);
+	has byRef => (is => 'ro', isa => Bool);
+	
+	method to_perl ()
+	{
+		if ($self->has_key)
+		{
+			return sprintf(
+				'PHP::INTERNALS::key_value_pair(%s, %s)',
+				$self->key ? $self->key->to_perl() : 'undef',
+				$self->value->to_perl(),
+			);
+		}
+		
+		return $self->expr->to_perl();
+	}
+}
+
 role Scalar with Node;
 
 role Scalar_Value with Scalar
@@ -239,11 +280,8 @@ class Stmt_Else with Stmt
 
 ## TODO
 #
-# Arg
 # Const
 # Expr_ArrayDimFetch
-# Expr_ArrayItem
-# Expr_Array
 # Expr_AssignBitwiseAnd
 # Expr_AssignBitwiseOr
 # Expr_AssignBitwiseXor
@@ -302,7 +340,6 @@ class Stmt_Else with Stmt
 # Expr_Variable
 # Expr_Yield
 # Name_FullyQualified
-# Name
 # Name_Relative
 # Param
 # Scalar_ClassConst
